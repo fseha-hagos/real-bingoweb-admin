@@ -1,4 +1,5 @@
 import axios from "axios";
+import { authClient } from "./auth-client";
 
 /**
  * Admin REST calls go through same-origin `/api/admin/*`
