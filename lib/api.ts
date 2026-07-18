@@ -8,7 +8,7 @@ const API_BASE_URL =
   typeof window !== "undefined"
     ? "/api/admin"
     : process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") ||
-      "http://localhost:3001/admin";
+      "https://real-bingoweb-backend.onrender.com/admin";
 
 const api = axios.create({
   baseURL: API_BASE_URL,

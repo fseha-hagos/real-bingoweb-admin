@@ -22,8 +22,8 @@ npx tsx scripts/seed-admin.ts
 
 ```bash
 # .env
-BACKEND_URL=http://localhost:3001
-NEXT_PUBLIC_BACKEND_URL=http://localhost:3001
+BACKEND_URL=https://real-bingoweb-backend.onrender.com
+NEXT_PUBLIC_BACKEND_URL=https://real-bingoweb-backend.onrender.com
 
 npm install
 npm run dev -- -p 3002

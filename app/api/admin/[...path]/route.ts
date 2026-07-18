@@ -7,7 +7,7 @@ function getBackendUrl() {
   const raw =
     process.env.BACKEND_URL ||
     process.env.NEXT_PUBLIC_BACKEND_URL ||
-    "http://localhost:3001";
+    "https://real-bingoweb-backend.onrender.com";
   return raw.replace(/\/$/, "").replace(/\/admin$/i, "");
 }
 
