@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { copyUpstreamSetCookies } from "@/lib/proxy-cookies";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -20,6 +21,7 @@ async function proxy(req: NextRequest, pathSegments: string[]) {
   const subPath = pathSegments.join("/");
   const url = new URL(req.url);
   const target = `${backend}/api/auth/${subPath}${url.search}`;
+  const isHttps = url.protocol === "https:";
 
   const headers = new Headers();
   const contentType = req.headers.get("content-type");
@@ -48,25 +50,7 @@ async function proxy(req: NextRequest, pathSegments: string[]) {
   const upstreamType = upstream.headers.get("content-type");
   if (upstreamType) resHeaders.set("content-type", upstreamType);
 
-  const getSetCookie = (
-    upstream.headers as Headers & { getSetCookie?: () => string[] }
-  ).getSetCookie?.();
-  if (getSetCookie && getSetCookie.length > 0) {
-    for (const c of getSetCookie) {
-      const cleaned = c
-        .replace(/;\s*Domain=[^;]*/gi, "")
-        .replace(/;\s*Secure/gi, "");
-      resHeaders.append("set-cookie", cleaned);
-    }
-  } else {
-    const single = upstream.headers.get("set-cookie");
-    if (single) {
-      resHeaders.append(
-        "set-cookie",
-        single.replace(/;\s*Domain=[^;]*/gi, "").replace(/;\s*Secure/gi, "")
-      );
-    }
-  }
+  copyUpstreamSetCookies(upstream.headers, resHeaders, { isHttps });
 
   return new NextResponse(body, {
     status: upstream.status,
