@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { copyUpstreamSetCookies } from "@/lib/proxy-cookies";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -7,14 +8,20 @@ function getBackendUrl() {
   const raw =
     process.env.BACKEND_URL ||
     process.env.NEXT_PUBLIC_BACKEND_URL ||
-    "http://localhost:3001";
+    "https://real-bingoweb-backend.onrender.com";
   return raw.replace(/\/$/, "").replace(/\/admin$/i, "");
 }
 
+/**
+ * Proxy admin REST so browser session cookies (admin origin) reach the backend.
+ * Prefer this route over next.config rewrites — rewrites to external hosts
+ * can drop or mishandle Cookie headers on some hosts.
+ */
 async function proxy(req: NextRequest, pathSegments: string[]) {
   const subPath = pathSegments.join("/");
   const url = new URL(req.url);
   const target = `${getBackendUrl()}/admin/${subPath}${url.search}`;
+  const isHttps = url.protocol === "https:";
 
   const headers = new Headers();
   const contentType = req.headers.get("content-type");
@@ -25,6 +32,8 @@ async function proxy(req: NextRequest, pathSegments: string[]) {
   if (authorization) headers.set("authorization", authorization);
   const origin = req.headers.get("origin") || url.origin;
   headers.set("origin", origin);
+  headers.set("x-forwarded-host", url.host);
+  headers.set("x-forwarded-proto", url.protocol.replace(":", ""));
 
   const init: RequestInit = {
     method: req.method,
@@ -42,6 +51,9 @@ async function proxy(req: NextRequest, pathSegments: string[]) {
   const resHeaders = new Headers();
   const upstreamType = upstream.headers.get("content-type");
   if (upstreamType) resHeaders.set("content-type", upstreamType);
+
+  // In case admin routes also refresh session cookies
+  copyUpstreamSetCookies(upstream.headers, resHeaders, { isHttps });
 
   return new NextResponse(body, {
     status: upstream.status,
